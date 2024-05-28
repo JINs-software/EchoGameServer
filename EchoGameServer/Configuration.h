@@ -1,4 +1,7 @@
 #pragma once
 
+#define SEND_BUFF_SIZE			20000
+#define RECV_BUFF_SIZE			20000
+
 #define AUTH_SESSION_GROUP		1000
 #define ECHO_SESSION_GROUP		2000

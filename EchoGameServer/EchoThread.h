@@ -3,6 +3,8 @@
 class EchoThread : public CLanGroupThread
 {
 private:
+	UINT temp_TotalRecvedMsg = 0;
+private:
 	void ProcessEchoMessage(SessionID sessionID, INT64 accountNo, LONGLONG sendTick);
 
 	// 에코 스레드 초기화

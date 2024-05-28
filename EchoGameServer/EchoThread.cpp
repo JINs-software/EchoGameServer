@@ -24,39 +24,31 @@ void EchoThread::ProcessEchoMessage(SessionID sessionID, INT64 accountNo, LONGLO
 void EchoThread::OnRecv(SessionID sessionID, JBuffer& recvData)
 {
 	// 에코 요청 메시지 수신
-	while (recvData.GetUseSize() >= sizeof(stMSG_HDR)) {
-		stMSG_HDR msgHdr;
-		recvData.Peek(&msgHdr);
-		if (msgHdr.code != dfPACKET_CODE) {
-			// 코드 불일치
-			// 연결 강제 종료!
-			DebugBreak();
-			break;
-		}
-		if (recvData.GetUseSize() < sizeof(stMSG_HDR) + msgHdr.len) {
-			// 메시지 미완성
-			//DebugBreak();
-			// => 메모리 풀 방식에서 스마트 포인터 방식 변경 시 미환성 메시지 수신 발생..
-			break;
-		}
+	UINT bufferOffset = 0;
+	while (recvData.GetUseSize() > bufferOffset) {
+		stMSG_HDR* hdr = (stMSG_HDR*)recvData.GetBufferPtr(bufferOffset);
+		recvData.DirectMoveDequeueOffset(sizeof(stMSG_HDR));
+		bufferOffset += sizeof(stMSG_HDR);
 
-		recvData >> msgHdr;
-		if (!Decode(msgHdr.randKey, msgHdr.len, msgHdr.checkSum, recvData.GetDequeueBufferPtr())) {
+		stMSG_GAME_REQ_ECHO* msg = (stMSG_GAME_REQ_ECHO*)recvData.GetBufferPtr(bufferOffset);
+		bufferOffset += sizeof(stMSG_GAME_REQ_ECHO);
+
+		temp_TotalRecvedMsg++;
+
+		if (!Decode(hdr->randKey, hdr->len, hdr->checkSum, (BYTE*)msg)) {
 			DebugBreak();
 			// 연결 강제 종료?
 		}
 
-		stMSG_GAME_REQ_ECHO msg;
-		recvData >> msg;
-		if (msg.Type == en_PACKET_CS_GAME_REQ_ECHO) {
-			ProcessEchoMessage(sessionID, msg.AccountoNo, msg.SendTick);
+		if (msg->Type == en_PACKET_CS_GAME_REQ_ECHO) {
+			ProcessEchoMessage(sessionID, msg->AccountoNo, msg->SendTick);
 		}
 		else {
 			DebugBreak();
 		}
 	}
 
-	if (recvData.GetUseSize() != 0) {
-		DebugBreak();
-	}
+	//if (recvData.GetUseSize() != 0) {
+	//	DebugBreak();
+	//}
 }

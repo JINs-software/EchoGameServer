@@ -9,8 +9,8 @@ class EchoGameServer : public CLanGroupServer
 {
 public:
 	//upServer(const char* serverIP, uint16 serverPort, DWORD numOfIocpConcurrentThrd, uint16 numOfWorkerThreads, uint16 maxOfConnections)
-	EchoGameServer(const char* serverIP, uint16 serverPort, DWORD numOfIocpConcurrentThrd, uint16 numOfWorkerThreads, uint16 maxOfConnections)
-		: CLanGroupServer(serverIP, serverPort, numOfIocpConcurrentThrd, numOfWorkerThreads, maxOfConnections) {
+	EchoGameServer(const char* serverIP, uint16 serverPort, DWORD numOfIocpConcurrentThrd, uint16 numOfWorkerThreads, uint16 maxOfConnections, uint32 sessionSendBuffSize, uint32 sessionRecvBuffSize)
+		: CLanGroupServer(serverIP, serverPort, numOfIocpConcurrentThrd, numOfWorkerThreads, maxOfConnections, sessionSendBuffSize, sessionRecvBuffSize) {
 		// 그룹 스레드 생성 및 셋팅
 		CreateGroup(AUTH_SESSION_GROUP, new AuthThread());
 		CreateGroup(ECHO_SESSION_GROUP, new EchoThread());
