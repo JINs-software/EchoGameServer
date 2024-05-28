@@ -72,9 +72,11 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ExternalIncludePath>$(SolutionDir)..\..\0. Utility\0. ServerNetwork\include;$(SolutionDir)..\..\0. Utility\2. RingBuffer\include;$(SolutionDir)..\..\0. Utility\MemoryPool\include;$(SolutionDir)..\..\0. Utility\CLanLibrary\include;$(ExternalIncludePath)</ExternalIncludePath>
+    <OutDir>$(SolutionDir)\bin\$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ExternalIncludePath>$(SolutionDir)..\..\0. Utility\0. ServerNetwork\include;$(SolutionDir)..\..\0. Utility\2. RingBuffer\include;$(SolutionDir)..\..\0. Utility\MemoryPool\include;$(SolutionDir)..\..\0. Utility\CLanLibrary\include;$(ExternalIncludePath)</ExternalIncludePath>
+    <OutDir>$(SolutionDir)\bin\$(Configuration)\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -125,6 +127,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <Optimization>Disabled</Optimization>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
