@@ -9,7 +9,20 @@ void AuthThread::ProcessAuth(SessionID sessionID, INT64 accountNo, char sessionK
 	if (AuthQueryToRedis(accountNo, sessionKey)) {
 		// - 인증 성공
 		// (1) EnterGroup(세션, 에코 그룹)
-		ForwardSessionGroup(sessionID, ECHO_SESSION_GROUP);
+		GroupID gid;
+		if (sessionID % 4 == 0) {
+			gid = ECHO_SESSION_GROUP_0;
+		}
+		else if (sessionID % 4 == 1) {
+			gid = ECHO_SESSION_GROUP_1;
+		}
+		else if (sessionID % 4 == 2) {
+			gid = ECHO_SESSION_GROUP_2;
+		}
+		else if (sessionID % 4 == 3) {
+			gid = ECHO_SESSION_GROUP_3;
+		}
+		ForwardSessionGroup(sessionID, gid);
 		// (2) 성공 반환 메시지 전달
 		SendLoginResponse(sessionID, accountNo, 1);
 	}
@@ -27,7 +40,11 @@ bool AuthThread::AuthQueryToRedis(INT64 accountNo, char SessionKey[64])
 
 void AuthThread::SendLoginResponse(SessionID sessionID, INT64 accountNo, BYTE status)
 {
+#if defined(ALLOC_BY_TLS_MEM_POOL)
+	JBuffer* resMsg = GetSerialSendBuff();
+#else 
 	JBuffer* resMsg = new JBuffer(sizeof(stMSG_HDR) + sizeof(stMSG_GAME_RES_LOGIN));
+#endif
 	stMSG_HDR* hdr = resMsg->DirectReserve<stMSG_HDR>();
 	hdr->code = dfPACKET_CODE;
 	hdr->len = sizeof(stMSG_GAME_RES_LOGIN);
@@ -85,6 +102,8 @@ void AuthThread::OnRecv(SessionID sessionID, JBuffer& recvData)
 		else {
 			DebugBreak();
 		}
+
+		m_ProcCnt++;
 	}
 
 	if (recvData.GetUseSize() != 0) {

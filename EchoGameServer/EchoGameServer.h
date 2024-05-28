@@ -10,10 +10,18 @@ class EchoGameServer : public CLanGroupServer
 public:
 	//upServer(const char* serverIP, uint16 serverPort, DWORD numOfIocpConcurrentThrd, uint16 numOfWorkerThreads, uint16 maxOfConnections)
 	EchoGameServer(const char* serverIP, uint16 serverPort, DWORD numOfIocpConcurrentThrd, uint16 numOfWorkerThreads, uint16 maxOfConnections, uint32 sessionSendBuffSize, uint32 sessionRecvBuffSize)
+#if defined(ALLOC_BY_TLS_MEM_POOL)
+		: CLanGroupServer(serverIP, serverPort, numOfIocpConcurrentThrd, numOfWorkerThreads, maxOfConnections) {
+#else
 		: CLanGroupServer(serverIP, serverPort, numOfIocpConcurrentThrd, numOfWorkerThreads, maxOfConnections, sessionSendBuffSize, sessionRecvBuffSize) {
+#endif
 		// 그룹 스레드 생성 및 셋팅
-		CreateGroup(AUTH_SESSION_GROUP, new AuthThread());
-		CreateGroup(ECHO_SESSION_GROUP, new EchoThread());
+		CreateGroup(AUTH_SESSION_GROUP, new AuthThread(true, AUTH_GROUP_TLSMEMPOOL_UNIT_CNT, AUTH_GROUP_TLSMEMPOOL_CAPACITY));
+		CreateGroup(ECHO_SESSION_GROUP_0, new EchoThread(true, ECHO_GROUP_TLSMEMPOOL_UNIT_CNT, ECHO_GROUP_TLSMEMPOOL_CAPACITY));
+		CreateGroup(ECHO_SESSION_GROUP_1, new EchoThread(true, ECHO_GROUP_TLSMEMPOOL_UNIT_CNT, ECHO_GROUP_TLSMEMPOOL_CAPACITY));
+		CreateGroup(ECHO_SESSION_GROUP_2, new EchoThread(true, ECHO_GROUP_TLSMEMPOOL_UNIT_CNT, ECHO_GROUP_TLSMEMPOOL_CAPACITY));
+		CreateGroup(ECHO_SESSION_GROUP_3, new EchoThread(true, ECHO_GROUP_TLSMEMPOOL_UNIT_CNT, ECHO_GROUP_TLSMEMPOOL_CAPACITY));
+
 	}
 private:
 	//virtual bool OnWorkerThreadCreate(HANDLE thHnd) { return true; };

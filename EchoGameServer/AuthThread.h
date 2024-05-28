@@ -3,6 +3,9 @@
 
 class AuthThread : public CLanGroupThread
 {
+public:
+	AuthThread(bool setTlsMemPool, size_t tlsMemPoolUnitCnt, size_t tlsMemPoolCapacity)
+		: CLanGroupThread(setTlsMemPool, tlsMemPoolUnitCnt, tlsMemPoolCapacity) {}
 private:
 	void	ProcessAuth(SessionID sessionID, INT64 accountNo, char SessionKey[64]);
 	bool	AuthQueryToRedis(INT64 accountNo, char SessionKey[64]);
