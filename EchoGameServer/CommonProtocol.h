@@ -5,12 +5,6 @@
 #define dfPACKET_KEY		50
 
 #pragma pack(push, 1)
-struct stMSG_HDR {
-	BYTE	code;
-	USHORT	len;
-	BYTE	randKey;
-	BYTE	checkSum;
-};
 struct stMSG_GAME_REQ_LOGIN {
 	WORD	Type;
 	INT64	AccountNo;

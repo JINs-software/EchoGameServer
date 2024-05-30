@@ -9,6 +9,7 @@ void AuthThread::ProcessAuth(SessionID sessionID, INT64 accountNo, char sessionK
 	if (AuthQueryToRedis(accountNo, sessionKey)) {
 		// - 인증 성공
 		// (1) EnterGroup(세션, 에코 그룹)
+#if defined(MULTI_ECHO_SESSION_GROUP)
 		GroupID gid;
 		if (sessionID % 4 == 0) {
 			gid = ECHO_SESSION_GROUP_0;
@@ -23,6 +24,9 @@ void AuthThread::ProcessAuth(SessionID sessionID, INT64 accountNo, char sessionK
 			gid = ECHO_SESSION_GROUP_3;
 		}
 		ForwardSessionGroup(sessionID, gid);
+#else
+		ForwardSessionGroup(sessionID, ECHO_SESSION_GROUP_0);
+#endif
 		// (2) 성공 반환 메시지 전달
 		SendLoginResponse(sessionID, accountNo, 1);
 	}
@@ -41,23 +45,20 @@ bool AuthThread::AuthQueryToRedis(INT64 accountNo, char SessionKey[64])
 void AuthThread::SendLoginResponse(SessionID sessionID, INT64 accountNo, BYTE status)
 {
 #if defined(ALLOC_BY_TLS_MEM_POOL)
-	JBuffer* resMsg = GetSerialSendBuff();
+	JBuffer* resMsg = AllocSerialSendBuff(sizeof(stMSG_GAME_RES_LOGIN));
 #else 
 	JBuffer* resMsg = new JBuffer(sizeof(stMSG_HDR) + sizeof(stMSG_GAME_RES_LOGIN));
-#endif
 	stMSG_HDR* hdr = resMsg->DirectReserve<stMSG_HDR>();
 	hdr->code = dfPACKET_CODE;
 	hdr->len = sizeof(stMSG_GAME_RES_LOGIN);
 	hdr->randKey = (BYTE)rand();
+#endif
 
 	*resMsg << (WORD)en_PACKET_CS_GAME_RES_LOGIN;
 	*resMsg << status;
 	*resMsg << accountNo;
 
-	Encode(hdr->randKey, hdr->len, hdr->checkSum, resMsg->GetBufferPtr(sizeof(stMSG_HDR)));
-	if (!SendPacket(sessionID, resMsg)) {
-		DebugBreak();
-	}
+	SendPacket(sessionID, resMsg);
 }
 
 void AuthThread::OnStart()
@@ -65,46 +66,31 @@ void AuthThread::OnStart()
 	// 레디스 연동
 }
 
-void AuthThread::OnRecv(SessionID sessionID, JBuffer& recvData)
+void AuthThread::OnMessage(SessionID sessionID, JBuffer& recvData)
 {
 	// 로그인 요청 메시지 수신
-	while (recvData.GetUseSize() >= sizeof(stMSG_HDR)) {
-		stMSG_HDR msgHdr;
-		recvData.Peek(&msgHdr);
-		if (msgHdr.code != dfPACKET_CODE) {
-			// 코드 불일치
-			// 연결 강제 종료!
+	LONG recvMsgCnt = 0;
+	while (recvData.GetUseSize() >= sizeof(WORD)) {
+		WORD type;
+		recvData.Peek(&type);
+		if (type != en_PACKET_CS_GAME_REQ_LOGIN) {
 			DebugBreak();
-			break;
 		}
-		if (recvData.GetUseSize() < sizeof(stMSG_HDR) + msgHdr.len) {
-			// 메시지 미완성
-			//DebugBreak();
-			// => 메모리 풀 방식에서 스마트 포인터 방식 변경 시 미환성 메시지 수신 발생..
-			break;
-		}
+		else {
+			stMSG_GAME_REQ_LOGIN msg;
+			recvData >> msg;
 
-		recvData >> msgHdr;
-		if (!Decode(msgHdr.randKey, msgHdr.len, msgHdr.checkSum, recvData.GetDequeueBufferPtr())) {
-			DebugBreak();
-			// 연결 강제 종료?
-		}
-
-		stMSG_GAME_REQ_LOGIN msg;
-		recvData >> msg;
-		if (msg.Type == en_PACKET_CS_GAME_REQ_LOGIN) {
 			// 1. 버전 확인
 			//	skip..
 
 			// 2. 인증
 			ProcessAuth(sessionID, msg.AccountNo, msg.SessionKey);
 		}
-		else {
-			DebugBreak();
-		}
-
-		m_ProcCnt++;
+		recvMsgCnt++;
 	}
+#if defined(CALCULATE_TRANSACTION_PER_SECOND)
+	IncrementRecvTransaction(recvMsgCnt);
+#endif
 
 	if (recvData.GetUseSize() != 0) {
 		DebugBreak();

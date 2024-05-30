@@ -18,9 +18,11 @@ public:
 		// 그룹 스레드 생성 및 셋팅
 		CreateGroup(AUTH_SESSION_GROUP, new AuthThread(true, AUTH_GROUP_TLSMEMPOOL_UNIT_CNT, AUTH_GROUP_TLSMEMPOOL_CAPACITY));
 		CreateGroup(ECHO_SESSION_GROUP_0, new EchoThread(true, ECHO_GROUP_TLSMEMPOOL_UNIT_CNT, ECHO_GROUP_TLSMEMPOOL_CAPACITY));
+#if defined(MULTI_ECHO_SESSION_GROUP)
 		CreateGroup(ECHO_SESSION_GROUP_1, new EchoThread(true, ECHO_GROUP_TLSMEMPOOL_UNIT_CNT, ECHO_GROUP_TLSMEMPOOL_CAPACITY));
 		CreateGroup(ECHO_SESSION_GROUP_2, new EchoThread(true, ECHO_GROUP_TLSMEMPOOL_UNIT_CNT, ECHO_GROUP_TLSMEMPOOL_CAPACITY));
 		CreateGroup(ECHO_SESSION_GROUP_3, new EchoThread(true, ECHO_GROUP_TLSMEMPOOL_UNIT_CNT, ECHO_GROUP_TLSMEMPOOL_CAPACITY));
+#endif
 
 	}
 private:
@@ -31,9 +33,6 @@ private:
 
 	// 클라이언트 접속 -> 인증 그룹에 세션 정보 전달
 	virtual void OnClientJoin(SessionID sessionID);
-
 	virtual void OnClientLeave(SessionID sessionID);
-
-	virtual UINT RecvData(JBuffer& recvBuff, JBuffer& dest);
 };
 
