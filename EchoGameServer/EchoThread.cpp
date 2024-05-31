@@ -22,13 +22,13 @@ void EchoThread::ProcessEchoMessage(SessionID sessionID, INT64 accountNo, LONGLO
 
 void EchoThread::OnStart()
 {
-	//HANDLE hThread = GetCurrentThread();
-	//
-	//// 현재 스레드의 우선순위를 높음으로 설정
-	//if (!SetThreadPriority(hThread, THREAD_PRIORITY_HIGHEST)) {
-	//	std::cerr << "Failed to set thread priority. Error: " << GetLastError() << "\n";
-	//	DebugBreak();
-	//}
+	HANDLE hThread = GetCurrentThread();
+	
+	// 현재 스레드의 우선순위를 높음으로 설정
+	if (!SetThreadPriority(hThread, THREAD_PRIORITY_HIGHEST)) {
+		std::cerr << "Failed to set thread priority. Error: " << GetLastError() << "\n";
+		DebugBreak();
+	}
 }
 
 void EchoThread::OnMessage(SessionID sessionID, JBuffer& recvData)

@@ -68,6 +68,10 @@ void AuthThread::OnStart()
 
 void AuthThread::OnMessage(SessionID sessionID, JBuffer& recvData)
 {
+#if defined(TOTAL_AUTH_LIMITATION)
+	static UINT16 totlaAuth = 0;
+#endif
+
 	// 로그인 요청 메시지 수신
 	LONG recvMsgCnt = 0;
 	while (recvData.GetUseSize() >= sizeof(WORD)) {
@@ -95,4 +99,11 @@ void AuthThread::OnMessage(SessionID sessionID, JBuffer& recvData)
 	if (recvData.GetUseSize() != 0) {
 		DebugBreak();
 	}
+
+#if defined(TOTAL_AUTH_LIMITATION)
+	totlaAuth++;
+	if (totlaAuth >= 5000) {
+		StopGroupThread();
+	}
+#endif
 }
