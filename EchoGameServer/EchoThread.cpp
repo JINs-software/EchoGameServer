@@ -33,6 +33,53 @@ void EchoThread::OnStart()
 
 void EchoThread::OnMessage(SessionID sessionID, JBuffer& recvData)
 {
+#if defined(ON_MESSAGE_BUFFERING)
+	while (true) {
+		JBuffer* resMsg = AllocSerialBuff();
+		if (resMsg->GetFreeSize() < sizeof(stMSG_HDR)) {
+			DebugBreak();
+		}
+		stMSG_HDR* hdr = resMsg->DirectReserve<stMSG_HDR>();
+		hdr->code = dfPACKET_CODE;
+		hdr->randKey = (BYTE)(-1);
+		hdr->len = 0;
+
+		LONG recvMsgCnt = 0;
+		while (recvData.GetUseSize() >= sizeof(WORD)) {
+			WORD type;
+			recvData.Peek(&type);
+			if (type != en_PACKET_CS_GAME_REQ_ECHO) {
+				DebugBreak();
+			}
+			else {
+				if (resMsg->GetFreeSize() < sizeof(stMSG_GAME_REQ_ECHO::Type) + sizeof(stMSG_GAME_REQ_ECHO::AccountoNo) + sizeof(stMSG_GAME_REQ_ECHO::SendTick)) {
+					break;
+				}
+
+				stMSG_GAME_REQ_ECHO msg;
+				recvData >> msg;
+
+				*resMsg << (WORD)en_PACKET_CS_GAME_RES_ECHO;
+				*resMsg << msg.AccountoNo;
+				*resMsg << msg.SendTick;
+				hdr->len += sizeof(WORD) + sizeof(msg.AccountoNo) + sizeof(msg.SendTick);
+			}
+			recvMsgCnt++;
+		}
+#if defined(CALCULATE_TRANSACTION_PER_SECOND)
+		IncrementRecvTransactionNoGuard(recvMsgCnt);
+#endif
+
+		if (hdr->len > 0) {
+			SendPacket(sessionID, resMsg);
+		}
+		else {
+			FreeSerialBuff(resMsg);
+			break;
+		}
+
+	}
+#else
 	// 에코 요청 메시지 수신
 	LONG recvMsgCnt = 0;
 	while (recvData.GetUseSize() >= sizeof(WORD)) {
@@ -49,7 +96,8 @@ void EchoThread::OnMessage(SessionID sessionID, JBuffer& recvData)
 		recvMsgCnt++;
 	}
 #if defined(CALCULATE_TRANSACTION_PER_SECOND)
-	IncrementRecvTransaction(recvMsgCnt);
+	IncrementRecvTransactionNoGuared(recvMsgCnt);
+#endif
 #endif
 
 	if (recvData.GetUseSize() != 0) {

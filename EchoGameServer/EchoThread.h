@@ -1,6 +1,8 @@
 #pragma once
 #include "CLanGroupServer.h"
 
+#define ON_MESSAGE_BUFFERING
+
 class EchoThread : public CLanGroupThread
 {
 public:

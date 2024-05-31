@@ -93,7 +93,7 @@ void AuthThread::OnMessage(SessionID sessionID, JBuffer& recvData)
 		recvMsgCnt++;
 	}
 #if defined(CALCULATE_TRANSACTION_PER_SECOND)
-	IncrementRecvTransaction(recvMsgCnt);
+	IncrementRecvTransactionNoGuard(recvMsgCnt);
 #endif
 
 	if (recvData.GetUseSize() != 0) {
