@@ -36,13 +36,6 @@ void EchoThread::OnMessage(SessionID sessionID, JBuffer& recvData)
 #if defined(ON_MESSAGE_BUFFERING)
 	while (true) {
 		JBuffer* resMsg = AllocSerialBuff();
-		if (resMsg->GetFreeSize() < sizeof(stMSG_HDR)) {
-			DebugBreak();
-		}
-		stMSG_HDR* hdr = resMsg->DirectReserve<stMSG_HDR>();
-		hdr->code = dfPACKET_CODE;
-		hdr->randKey = (BYTE)(-1);
-		hdr->len = 0;
 
 		LONG recvMsgCnt = 0;
 		while (recvData.GetUseSize() >= sizeof(WORD)) {
@@ -52,17 +45,24 @@ void EchoThread::OnMessage(SessionID sessionID, JBuffer& recvData)
 				DebugBreak();
 			}
 			else {
-				if (resMsg->GetFreeSize() < sizeof(stMSG_GAME_REQ_ECHO::Type) + sizeof(stMSG_GAME_REQ_ECHO::AccountoNo) + sizeof(stMSG_GAME_REQ_ECHO::SendTick)) {
+				if (resMsg->GetFreeSize() < sizeof(stMSG_HDR) + sizeof(stMSG_GAME_REQ_ECHO::Type) + sizeof(stMSG_GAME_REQ_ECHO::AccountoNo) + sizeof(stMSG_GAME_REQ_ECHO::SendTick)) {
 					break;
 				}
 
 				stMSG_GAME_REQ_ECHO msg;
 				recvData >> msg;
 
-				*resMsg << (WORD)en_PACKET_CS_GAME_RES_ECHO;
-				*resMsg << msg.AccountoNo;
-				*resMsg << msg.SendTick;
-				hdr->len += sizeof(WORD) + sizeof(msg.AccountoNo) + sizeof(msg.SendTick);
+				stMSG_HDR* hdr = resMsg->DirectReserve<stMSG_HDR>();
+				hdr->code = dfPACKET_CODE;
+				hdr->len = sizeof(stMSG_GAME_REQ_ECHO::Type) + sizeof(stMSG_GAME_REQ_ECHO::AccountoNo) + sizeof(stMSG_GAME_REQ_ECHO::SendTick);
+				hdr->randKey = GetRandomKey();
+
+				stMSG_GAME_RES_ECHO* body = resMsg->DirectReserve<stMSG_GAME_RES_ECHO>();
+				body->Type = en_PACKET_CS_GAME_RES_ECHO;
+				body->AccountoNo = msg.AccountoNo;
+				body->SendTick = msg.SendTick;
+				
+				Encode(hdr->randKey, hdr->len, hdr->checkSum, (BYTE*)body);
 			}
 			recvMsgCnt++;
 		}
@@ -70,8 +70,9 @@ void EchoThread::OnMessage(SessionID sessionID, JBuffer& recvData)
 		IncrementRecvTransactionNoGuard(recvMsgCnt);
 #endif
 
-		if (hdr->len > 0) {
-			SendPacket(sessionID, resMsg);
+		if (recvMsgCnt > 0) {
+			SendPacket(sessionID, resMsg, true);
+			IncrementSendTransactionNoGuard(recvMsgCnt);
 		}
 		else {
 			FreeSerialBuff(resMsg);
@@ -96,7 +97,7 @@ void EchoThread::OnMessage(SessionID sessionID, JBuffer& recvData)
 		recvMsgCnt++;
 	}
 #if defined(CALCULATE_TRANSACTION_PER_SECOND)
-	IncrementRecvTransactionNoGuared(recvMsgCnt);
+	IncrementRecvTransactionNoGuard(recvMsgCnt);
 #endif
 #endif
 

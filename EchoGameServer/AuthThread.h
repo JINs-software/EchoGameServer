@@ -1,7 +1,7 @@
 #pragma once
 #include "CLanGroupServer.h"
 
-#define TOTAL_AUTH_LIMITATION						5000
+#define TOTAL_AUTH_LIMITATION						1
 
 class AuthThread : public CLanGroupThread
 {
